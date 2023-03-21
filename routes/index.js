@@ -2,6 +2,7 @@ const router = require("express").Router();
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
 const User = require("../models/User");
+const Note = require("../models/Note");
 
 passport.use(User.createStrategy());
 
@@ -13,7 +14,14 @@ passport.deserializeUser(User.deserializeUser());
  *  - - - - GET Requests - - - - -
  *  - - - - - - - - - - - - - - --
  */
-router.get("/");
+router.get("/api/notes", (req, res) => {
+  const username = req.body.username;
+  const foundUser = User.findOne({ username: username });
+
+  Note.find({ user: foundUser._id })
+    .then((notes) => res.json({ success: true, message: "Success", notes }))
+    .catch((err) => res.json({ success: false, message: err }));
+});
 
 /*
  *  - - - - - - --  - - - - - - --
@@ -53,19 +61,44 @@ router.post("/api/register", function (req, res) {
     }
   );
 });
+router.post("/api/newnote", (req, res) => {
+  const email = req.body.username;
+  const title = req.body.title;
+  const body = req.body.body;
+  console.log(email);
 
+  async function saveNote() {
+    const foundUser = await User.findOne({ username: email });
+    console.log(foundUser);
+    const newNote = new Note({
+      title: title,
+      body: body,
+      user: foundUser._id,
+    });
+    await newNote
+      .save()
+      .then((note) =>
+        res.json({ success: true, message: "Successfully saved note" })
+      )
+      .catch((err) => {
+        res.json({ success: false, message: err });
+      });
+    mongoose.connection.close();
+  }
+  saveNote();
+});
 /*
  *  - - - - - - --  - - - - - - --
  *  - - - - DELETE Requests - - - - -
  *  - - - - - - - - - - - - - - --
  */
-router.delete("/");
+router.delete("/api/note");
 
 /*
  *  - - - - - - --  - - - - - - --
  *  - - - - PATCH Requests - - - - -
  *  - - - - - - - - - - - - - - --
  */
-router.patch("/");
+router.patch("/api/submit-note", (req, res) => {});
 
 module.exports = router;
