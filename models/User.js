@@ -10,6 +10,8 @@ mongoose.connect(DB_STRING, {
 });
 
 const userSchema = new mongoose.Schema({
+  firstName: String,
+  lastName: String,
   username: String,
   password: String,
 });

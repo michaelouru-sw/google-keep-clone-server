@@ -1,8 +1,23 @@
 const router = require("express").Router();
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
+const mongoose = require("mongoose");
 const User = require("../models/User");
 const Note = require("../models/Note");
+const cors = require("cors");
+const MongoClient = require("mongodb").MongoClient;
+const DB_STRING = process.env.DB_STRING;
+const client = new MongoClient(DB_STRING);
+
+const corsOptions = {
+  origin: "http://127.0.0.1:3001/",
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
+  preflightContinue: false,
+  allowedHeaders: ["X-Requested-With", "Content-Type"],
+  maxAge: 3600,
+};
 
 passport.use(User.createStrategy());
 
@@ -14,13 +29,17 @@ passport.deserializeUser(User.deserializeUser());
  *  - - - - GET Requests - - - - -
  *  - - - - - - - - - - - - - - --
  */
-router.get("/api/notes", (req, res) => {
-  const username = req.body.username;
-  const foundUser = User.findOne({ username: username });
-
-  Note.find({ user: foundUser._id })
-    .then((notes) => res.json({ success: true, message: "Success", notes }))
-    .catch((err) => res.json({ success: false, message: err }));
+router.get("/api/notes/:username", (req, res) => {
+  const username = req.params.username;
+  User.findOne({ username: username })
+    .then((user) => {
+      Note.find({ user: user._id })
+        .then((notes) => res.json({ success: true, message: "Success", notes }))
+        .catch((err) => res.json({ success: false, message: err }));
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 });
 
 /*
@@ -35,9 +54,14 @@ router.post("/api/login", passport.authenticate("local"), (req, res) => {
   });
 });
 
-router.post("/api/register", function (req, res) {
-  User.register(
-    new User({ email: req.body.email, username: req.body.username }),
+router.post("/api/register", async (req, res) => {
+  console.log(req.body);
+  await User.register(
+    new User({
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      username: req.body.username,
+    }),
     req.body.password,
     function (err, user) {
       if (err) {
@@ -62,14 +86,12 @@ router.post("/api/register", function (req, res) {
   );
 });
 router.post("/api/newnote", (req, res) => {
-  const email = req.body.username;
+  const email = req.body.email;
   const title = req.body.title;
   const body = req.body.body;
-  console.log(email);
 
   async function saveNote() {
     const foundUser = await User.findOne({ username: email });
-    console.log(foundUser);
     const newNote = new Note({
       title: title,
       body: body,
@@ -83,7 +105,7 @@ router.post("/api/newnote", (req, res) => {
       .catch((err) => {
         res.json({ success: false, message: err });
       });
-    mongoose.connection.close();
+    client.close;
   }
   saveNote();
 });
@@ -92,7 +114,16 @@ router.post("/api/newnote", (req, res) => {
  *  - - - - DELETE Requests - - - - -
  *  - - - - - - - - - - - - - - --
  */
-router.delete("/api/note");
+router.delete("/api/note/:id", (req, res) => {
+  const noteId = req.params.id;
+  Note.deleteOne({ _id: noteId }).then((err) => {
+    if (err) {
+      console.log(err);
+    } else {
+      res.json({ success: true, message: "Note Successfully deleted." });
+    }
+  });
+});
 
 /*
  *  - - - - - - --  - - - - - - --

@@ -8,8 +8,32 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const sessionSecret = process.env.SESSION_SECRET;
 const DB_STRING = process.env.DB_STRING;
+const cors = require("cors");
 
-const app = express(DB_STRING);
+const app = express();
+// const corsOptions = {
+//   Access-Control-Allow-Origin: "http://127.0.0.1:3001/",
+//   credentials: true,
+//   optionsSuccessStatus: 200,
+//   methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
+//   preflightContinue: false,
+//   allowedHeaders: ["X-Requested-With", "Content-Type"],
+//   maxAge: 3600,
+// };
+
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "http://localhost:3001");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, OPTIONS, PUT, PATCH, DELETE"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "X-Requested-With, Content-Type"
+  );
+  res.setHeader("Access-Control-Allow-Credentials", true);
+  next();
+});
 
 // Connect to MongoDB database
 mongoose.connect(DB_STRING);
@@ -20,12 +44,13 @@ app.use(
     extended: true,
   })
 );
+app.use(bodyParser.json());
 
 app.use(
   session({
     secret: sessionSecret,
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true,
     cookie: { secure: true },
   })
 );
