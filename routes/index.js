@@ -1,23 +1,12 @@
 const router = require("express").Router();
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
-const mongoose = require("mongoose");
 const User = require("../models/User");
 const Note = require("../models/Note");
 const cors = require("cors");
 const MongoClient = require("mongodb").MongoClient;
 const DB_STRING = process.env.DB_STRING;
 const client = new MongoClient(DB_STRING);
-
-const corsOptions = {
-  origin: "http://127.0.0.1:3001/",
-  credentials: true,
-  optionsSuccessStatus: 200,
-  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
-  preflightContinue: false,
-  allowedHeaders: ["X-Requested-With", "Content-Type"],
-  maxAge: 3600,
-};
 
 passport.use(User.createStrategy());
 
